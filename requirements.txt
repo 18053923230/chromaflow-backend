@@ -1,0 +1,18 @@
+# Web Framework
+fastapi==0.109.2
+uvicorn[standard]==0.27.1 # ASGI server for FastAPI, [standard] includes websockets and other useful bits
+
+# Image Processing
+Pillow==10.2.0
+rembg[gpu,cli]==2.0.50 # [gpu] is optional if you don't plan for GPU on Render for MVP
+                       # [cli] provides the command line interface which can be useful
+
+# Celery & Redis
+celery==5.3.6
+redis==5.0.1 # Python client for Redis
+
+# For .env file loading (optional, good practice)
+python-dotenv==1.0.1
+
+# For multipart form data (image uploads)
+python-multipart==0.0.9

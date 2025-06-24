@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data # Persist Redis data locally (optional)
+
+  web:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - .:/app # Mount current directory to /app for live reloading
+    ports:
+      - "8000:8000"
+    environment:
+      # These will be picked up by celery_app.py and app/main.py (via dotenv)
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      # PYTHONUNBUFFERED=1 # Often useful for seeing logs immediately
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    # The command to run the Celery worker
+    # -A celery_app.celery_instance refers to the Celery app instance in celery_app.py
+    # worker is the command to start a worker
+    # -l info sets the log level to info
+    # -P solo can be helpful on some systems, or use -P eventlet or -P gevent for concurrency
+    command: celery -A celery_app.celery_instance worker -l info -P solo
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web # Optional, ensures web is at least started before worker
+
+volumes:
+  redis_data:
