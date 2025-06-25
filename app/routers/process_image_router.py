@@ -42,21 +42,40 @@ except ImportError as e:
     print("XXXX Check app/schemas/image_schemas.py for issues! XXXX")
     raise
 
-print("-----------------------------------------------------------------------------------")
+print("-4444444444444444444444444444444444444444444444444444444444444444444444444444444444-")
 
-# Step 5: Celery specific imports (AsyncResult and your app instance)
-# IMPORTANT: Ensure celery_app.py itself has no problematic imports or top-level code
+# Step 5a: Import AsyncResult only
 try:
     from celery.result import AsyncResult
     print(">>>> process_image_router.py: Successfully imported: AsyncResult from celery.result")
-    from celery_app import celery_instance # Import your Celery app instance
-    print(">>>> process_image_router.py: Successfully imported: celery_instance from celery_app")
 except ImportError as e:
-    print(f"XXXX process_image_router.py: ERROR importing Celery components (AsyncResult or celery_instance): {e} XXXX")
-    print("XXXX Check celery_app.py for issues! XXXX")
+    print(f"XXXX process_image_router.py: ERROR importing AsyncResult: {e} XXXX")
     raise
-
 print("-----------------------------------------------------------------------------------")
+
+print(">>>> process_image_router.py: ABOUT TO IMPORT celery_instance from celery_app <<<<")
+# Step 5b: Import celery_instance
+try:
+    from celery_app import celery_instance
+    print(">>>> process_image_router.py: Successfully imported: celery_instance from celery_app")
+    print(f">>>> process_image_router.py: Type of celery_instance: {type(celery_instance)} <<<<") # 确认对象类型
+except ImportError as e:
+    print(f"XXXX process_image_router.py: ERROR importing celery_instance: {e} XXXX")
+    raise
+except Exception as e_runtime_celery_app:
+    print(f"XXXX process_image_router.py: UNEXPECTED RUNTIME ERROR importing celery_instance (check celery_app.py): {e_runtime_celery_app} XXXX")
+    raise
+print("---5555555555555555555555555555555555555555555555555555555555555555555555555555----")
+
+print(">>>> process_image_router.py: celery_instance import attempt finished. SCRIPT IS STILL RUNNING BEFORE process_image_task import. <<<<")
+print(">>>> process_image_router.py: If app crashes now, it's NOT process_image_task yet, but possibly celery_app.py init. <<<<")
+# 加入一个小的延迟，看看是否因为太快执行到下一步而被 Render 误判
+import time
+print(">>>> process_image_router.py: Sleeping for 2 seconds before attempting to import process_image_task...")
+time.sleep(2)
+print(">>>> process_image_router.py: Woke up from sleep. Now attempting to import process_image_task.")
+print("---5555555555555555555555555555555555555555555555555555555555555555555555555555----")
+    
 
 # Step 6: THE MOST SUSPICIOUS IMPORT - Your Celery task
 # IMPORTANT: This will trigger loading of app.tasks.image_processing_tasks,
