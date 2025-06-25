@@ -12,41 +12,55 @@ import io
 
 router = APIRouter()
 
+# app/routers/process_image_router.py
 @router.post("/process", response_model=TaskSubmitResponse, status_code=202)
 async def create_image_processing_task(
     image: UploadFile = File(...),
     operations_json: str = Form(...)
 ):
-    """
-    Accepts an image and a list of operations, then queues a processing task.
-    """
-    if not image.content_type or not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid image.")
-
+    print(">>>> /api/v1/process: create_image_processing_task ENTERED <<<<")
     try:
+        print(f"DEBUG: image.filename = {image.filename}, image.content_type = {image.content_type}")
+
+        if not image.content_type or not image.content_type.startswith("image/"):
+            print("XXXX ERROR: Invalid image content_type XXXX")
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid image.")
+        print("DEBUG: image content_type check PASSED.")
+
         operations_data = json.loads(operations_json)
-        # Validate operations structure using Pydantic (implicitly via ProcessImageRequest)
-        # Create a list of Operation Pydantic models for validation and use
+        print(f"DEBUG: operations_data parsed: {operations_data}")
+
         validated_operations = [Operation(**op) for op in operations_data]
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON format for operations.")
-    except Exception as e: # Catches Pydantic validation errors and other unexpected errors
-         raise HTTPException(status_code=400, detail=f"Invalid operations structure: {str(e)}")
+        print(f"DEBUG: operations validated by Pydantic: {validated_operations}")
 
-    image_bytes = await image.read()
-    if not image_bytes:
-        raise HTTPException(status_code=400, detail="Image data is empty.")
+        image_bytes = await image.read()
+        if not image_bytes:
+            print("XXXX ERROR: Image data is empty XXXX")
+            raise HTTPException(status_code=400, detail="Image data is empty.")
+        print(f"DEBUG: image_bytes read, length: {len(image_bytes)}")
 
-    # Send task to Celery. operations_data is a list of dicts, which is fine.
-    # If validated_operations is preferred, ensure it's converted back to list of dicts if Celery task expects that.
-    # For now, using operations_data as it was before validation logic was made more explicit.
-    task = process_image_task.delay(image_data=image_bytes, operations=operations_data)
+        print("DEBUG: About to send task to Celery...")
+        task = process_image_task.delay(image_data=image_bytes, operations=operations_data)
+        print(f"DEBUG: Celery task sent, task_id: {task.id}")
 
-    return TaskSubmitResponse(
-        task_id=task.id,
-        status="PENDING", # Celery task status is PENDING immediately after .delay()
-        message="Image processing task submitted successfully."
-    )
+        response = TaskSubmitResponse(
+            task_id=task.id,
+            status="PENDING",
+            message="Image processing task submitted successfully."
+        )
+        print(f"DEBUG: Returning response: {response}")
+        return response
+    except HTTPException as http_exc: # Re-raise HTTPExceptions directly
+        print(f"XXXX HTTPException in /process: {http_exc.status_code} - {http_exc.detail} XXXX")
+        raise http_exc
+    except json.JSONDecodeError as json_err:
+        print(f"XXXX JSONDecodeError in /process: {json_err} XXXX")
+        raise HTTPException(status_code=400, detail=f"Invalid JSON format for operations: {str(json_err)}")
+    except Exception as e: # Catch any other unexpected errors
+        import traceback
+        print("XXXX UNEXPECTED ERROR in /process endpoint: XXXX")
+        print(traceback.format_exc()) # Print full traceback to logs
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.get("/tasks/{task_id}", response_model=TaskStatusResponse)
