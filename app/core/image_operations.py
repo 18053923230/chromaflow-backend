@@ -11,26 +11,30 @@ except Exception as e:
     raise
 print("-------------------------------------------------------")
 
+# 不要在这里直接 from rembg import remove
 
-print(">>>> image_operations.py: About to import rembg...") # 新增
-# 这是最关键的导入
-try:
-    from rembg import remove as rembg_remove # Rename to avoid conflict if 'remove' is used elsewhere
-    print(">>>> image_operations.py: rembg (and its 'remove' function) IMPORTED SUCCESSFULLY.") # 新增
-    print(">>>> image_operations.py: If rembg loads models now, this might be slow or fail on Render.")
-except ImportError as e_imp_rembg:
-    print(f"XXXX image_operations.py: IMPORT ERROR importing rembg: {e_imp_rembg} XXXX")
-    raise
-except Exception as e_runtime_rembg:
-    print(f"XXXX image_operations.py: RUNTIME ERROR during rembg import/init: {e_runtime_rembg} XXXX")
-    print("XXXX This is highly indicative of rembg/ONNX failing on Render. XXXX")
-    raise
-print("-------------------------------------------------------")
+_rembg_remove_func = None # 全局缓存加载后的函数
+
+def get_rembg_remove_func():
+    global _rembg_remove_func
+    if _rembg_remove_func is None:
+        print(">>>> image_operations.py: LAZY LOADING rembg now...")
+        try:
+            from rembg import remove as actual_rembg_remove
+            _rembg_remove_func = actual_rembg_remove
+            print(">>>> image_operations.py: rembg LAZY LOADED successfully.")
+        except Exception as e:
+            print(f"XXXX image_operations.py: ERROR during LAZY LOADING of rembg: {e} XXXX")
+            raise
+    return _rembg_remove_func
 
 
 print(">>>> image_operations.py: About to define remove_background_core...") # 新增
 def remove_background_core(image_bytes: bytes) -> bytes:
     print(">>>> remove_background_core: Function CALLED.") # 新增
+    rembg_remove = get_rembg_remove_func() # 在函数调用时才获取/加载
+    if not rembg_remove:
+        raise RuntimeError("rembg function could not be loaded.")
     try:
         input_image = Image.open(io.BytesIO(image_bytes))
         print(">>>> remove_background_core: Input image opened with Pillow.") # 新增

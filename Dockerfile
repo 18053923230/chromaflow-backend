@@ -24,20 +24,7 @@ COPY . .
 RUN ls -R /app
 RUN echo "Application code copied successfully."
 
-# 新增：预下载 rembg 模型
-RUN python -c "\
-print('Attempting to pre-warm rembg by processing a dummy image...'); \
-from rembg import remove; \
-import base64; \
-dummy_png_b64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; \
-dummy_image_bytes = base64.b64decode(dummy_png_b64); \
-try: \
-    processed_dummy = remove(dummy_image_bytes); \
-    print(f'rembg pre-warm successful. Processed dummy image length: {len(processed_dummy)}'); \
-except Exception as e: \
-    print(f'Error during rembg pre-warm: {e}'); \
-    raise; \
-print('rembg pre-warm attempt finished.')"
+
 # Expose the port the app runs on (FastAPI default is 8000 if not specified)
 EXPOSE 8000
 
