@@ -81,17 +81,17 @@ print("---5555555555555555555555555555555555555555555555555555555555555555555555
 # IMPORTANT: This will trigger loading of app.tasks.image_processing_tasks,
 # which in turn loads app.core.image_operations, which loads rembg.
 # This is the most likely point of failure if rembg/ONNX causes issues on import/init.
+# Step 6: THE MOST SUSPICIOUS IMPORT - Your Celery task
 try:
     from app.tasks.image_processing_tasks import process_image_task
     print(">>>> process_image_router.py: Successfully imported: process_image_task from app.tasks.image_processing_tasks")
-    print(">>>> process_image_router.py: If rembg/ONNX loads models on import, this might take time or fail silently here on Render.")
+    # ... (后续的成功打印)
 except ImportError as e:
     print(f"XXXX process_image_router.py: ERROR importing process_image_task: {e} XXXX")
-    print("XXXX This is a CRITICAL import. Check app/tasks/image_processing_tasks.py and its dependencies (app.core.image_operations, rembg). XXXX")
+    # ... (后续的错误打印)
     raise
-except Exception as e_runtime: # Catch other potential errors during import, like model loading issues
+except Exception as e_runtime:
     print(f"XXXX process_image_router.py: UNEXPECTED RUNTIME ERROR during import of process_image_task: {e_runtime} XXXX")
-    print("XXXX This might be rembg/ONNX model loading or initialization failing. XXXX")
     raise
 
 print("-----------------------------------------------------------------------------------")
