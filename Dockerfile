@@ -24,6 +24,9 @@ COPY . .
 RUN ls -R /app
 RUN echo "Application code copied successfully."
 
+# 新增：预下载 rembg 模型
+RUN python -c "print('Attempting to pre-download rembg models...'); from rembg.sessions import U2NetSession; U2NetSession.download_models(model_name='u2net'); print('u2net model download attempt finished.'); U2NetSession.download_models(model_name='u2netp'); print('u2netp model download attempt finished.')"
+
 # Expose the port the app runs on (FastAPI default is 8000 if not specified)
 EXPOSE 8000
 
