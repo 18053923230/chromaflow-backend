@@ -1,75 +1,64 @@
-from PIL import Image
-from rembg import remove
-import io
+print(">>>> image_operations.py: SCRIPT EXECUTION STARTED <<<<") # 新增
+print("-------------------------------------------------------")
 
+print(">>>> image_operations.py: About to import Pillow (Image) and io...") # 新增
+try:
+    from PIL import Image
+    import io
+    print(">>>> image_operations.py: Pillow (Image) and io IMPORTED.") # 新增
+except Exception as e:
+    print(f"XXXX image_operations.py: ERROR importing Pillow or io: {e} XXXX")
+    raise
+print("-------------------------------------------------------")
+
+
+print(">>>> image_operations.py: About to import rembg...") # 新增
+# 这是最关键的导入
+try:
+    from rembg import remove as rembg_remove # Rename to avoid conflict if 'remove' is used elsewhere
+    print(">>>> image_operations.py: rembg (and its 'remove' function) IMPORTED SUCCESSFULLY.") # 新增
+    print(">>>> image_operations.py: If rembg loads models now, this might be slow or fail on Render.")
+except ImportError as e_imp_rembg:
+    print(f"XXXX image_operations.py: IMPORT ERROR importing rembg: {e_imp_rembg} XXXX")
+    raise
+except Exception as e_runtime_rembg:
+    print(f"XXXX image_operations.py: RUNTIME ERROR during rembg import/init: {e_runtime_rembg} XXXX")
+    print("XXXX This is highly indicative of rembg/ONNX failing on Render. XXXX")
+    raise
+print("-------------------------------------------------------")
+
+
+print(">>>> image_operations.py: About to define remove_background_core...") # 新增
 def remove_background_core(image_bytes: bytes) -> bytes:
-    """
-    Removes the background from an image using rembg.
-    Args:
-        image_bytes: The input image as bytes.
-    Returns:
-        Image bytes with background removed (PNG format).
-    """
+    print(">>>> remove_background_core: Function CALLED.") # 新增
     try:
         input_image = Image.open(io.BytesIO(image_bytes))
-        # rembg returns a PIL Image object, usually in RGBA format
-        output_image = remove(input_image)
+        print(">>>> remove_background_core: Input image opened with Pillow.") # 新增
+        
+        print(">>>> remove_background_core: Calling rembg_remove()... THIS IS THE CPU/MEMORY INTENSIVE STEP.") # 新增
+        output_image = rembg_remove(input_image) # Using the renamed import
+        print(">>>> remove_background_core: rembg_remove() FINISHED.") # 新增
 
-        # Save the output image to bytes in PNG format (to preserve transparency)
         byte_arr = io.BytesIO()
         output_image.save(byte_arr, format='PNG')
+        print(">>>> remove_background_core: Output image saved to bytes (PNG).") # 新增
         return byte_arr.getvalue()
     except Exception as e:
-        print(f"Error in remove_background_core: {e}")
-        # Consider raising a custom exception or returning None/error indicator
-        raise # Re-raise for Celery to mark task as failed
+        print(f"XXXX remove_background_core: ERROR during background removal: {e} XXXX")
+        # Consider logging the full traceback here for more details
+        import traceback
+        print(traceback.format_exc())
+        raise
+print(">>>> image_operations.py: remove_background_core DEFINED.") # 新增
+print("-------------------------------------------------------")
 
+# ... (你的 resize_image_core 和其他函数也类似地加入 print) ...
 def resize_image_core(image_bytes: bytes, width: int = None, height: int = None, keep_aspect_ratio: bool = True) -> bytes:
-    """
-    Resizes an image.
-    Args:
-        image_bytes: The input image as bytes.
-        width: Target width.
-        height: Target height.
-        keep_aspect_ratio: If true, maintains aspect ratio.
-                           If both width and height are provided, it will try to fit within those dimensions.
-    Returns:
-        Resized image bytes (original format preserved unless specified otherwise later).
-    """
-    img = Image.open(io.BytesIO(image_bytes))
-    original_format = img.format # Store original format
+     print(">>>> resize_image_core: Function CALLED.")
+     # ... (内部逻辑)
+     print(">>>> resize_image_core: Function FINISHED.")
+     return image_bytes # 假设返回，你需要填充逻辑
+print(">>>> image_operations.py: resize_image_core DEFINED.")
 
-    if not width and not height:
-        return image_bytes # No resize needed
-
-    orig_width, orig_height = img.size
-
-    if keep_aspect_ratio:
-        if width and height:
-            # Fit within bounding box while maintaining aspect ratio
-            ratio = min(width / orig_width, height / orig_height)
-            new_width = int(orig_width * ratio)
-            new_height = int(orig_height * ratio)
-        elif width:
-            ratio = width / orig_width
-            new_height = int(orig_height * ratio)
-            new_width = width
-        elif height:
-            ratio = height / orig_height
-            new_width = int(orig_width * ratio)
-            new_height = height
-        else: # Should not happen if width or height is provided
-            return image_bytes
-    else: # Not keeping aspect ratio (stretch/squash)
-        new_width = width if width else orig_width
-        new_height = height if height else orig_height
-
-    resized_img = img.resize((new_width, new_height), Image.Resampling.LANCZOS) # Use LANCZOS for quality
-
-    byte_arr = io.BytesIO()
-    # Save in the original format if possible, default to PNG if format is unknown
-    save_format = original_format if original_format else 'PNG'
-    resized_img.save(byte_arr, format=save_format)
-    return byte_arr.getvalue()
-
-# Add more operations (convert_format, change_background_color) here later for MVP+
+print("-------------------------------------------------------")
+print(">>>> image_operations.py: SCRIPT EXECUTION FINISHED <<<<") # 新增
