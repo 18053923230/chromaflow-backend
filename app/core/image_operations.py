@@ -1,15 +1,12 @@
-print(">>>> image_operations.py: SCRIPT EXECUTION STARTED <<<<") # 新增
-print("-------------------------------------------------------")
 
-print(">>>> image_operations.py: About to import Pillow (Image) and io...") # 新增
 try:
     from PIL import Image
     import io
-    print(">>>> image_operations.py: Pillow (Image) and io IMPORTED.") # 新增
+    
 except Exception as e:
     print(f"XXXX image_operations.py: ERROR importing Pillow or io: {e} XXXX")
     raise
-print("-------------------------------------------------------")
+
 
 # 不要在这里直接 from rembg import remove
 
@@ -18,34 +15,32 @@ _rembg_remove_func = None # 全局缓存加载后的函数
 def get_rembg_remove_func():
     global _rembg_remove_func
     if _rembg_remove_func is None:
-        print(">>>> image_operations.py: LAZY LOADING rembg now...")
+        
         try:
             from rembg import remove as actual_rembg_remove
             _rembg_remove_func = actual_rembg_remove
-            print(">>>> image_operations.py: rembg LAZY LOADED successfully.")
+            
         except Exception as e:
             print(f"XXXX image_operations.py: ERROR during LAZY LOADING of rembg: {e} XXXX")
             raise
     return _rembg_remove_func
 
 
-print(">>>> image_operations.py: About to define remove_background_core...") # 新增
+
 def remove_background_core(image_bytes: bytes) -> bytes:
-    print(">>>> remove_background_core: Function CALLED.") # 新增
+    
     rembg_remove = get_rembg_remove_func() # 在函数调用时才获取/加载
     if not rembg_remove:
         raise RuntimeError("rembg function could not be loaded.")
     try:
         input_image = Image.open(io.BytesIO(image_bytes))
-        print(">>>> remove_background_core: Input image opened with Pillow.") # 新增
         
-        print(">>>> remove_background_core: Calling rembg_remove()... THIS IS THE CPU/MEMORY INTENSIVE STEP.") # 新增
         output_image = rembg_remove(input_image) # Using the renamed import
-        print(">>>> remove_background_core: rembg_remove() FINISHED.") # 新增
+        
 
         byte_arr = io.BytesIO()
         output_image.save(byte_arr, format='PNG')
-        print(">>>> remove_background_core: Output image saved to bytes (PNG).") # 新增
+        
         return byte_arr.getvalue()
     except Exception as e:
         print(f"XXXX remove_background_core: ERROR during background removal: {e} XXXX")
@@ -53,16 +48,8 @@ def remove_background_core(image_bytes: bytes) -> bytes:
         import traceback
         print(traceback.format_exc())
         raise
-print(">>>> image_operations.py: remove_background_core DEFINED.") # 新增
-print("-------------------------------------------------------")
 
-# ... (你的 resize_image_core 和其他函数也类似地加入 print) ...
+
 def resize_image_core(image_bytes: bytes, width: int = None, height: int = None, keep_aspect_ratio: bool = True) -> bytes:
-     print(">>>> resize_image_core: Function CALLED.")
-     # ... (内部逻辑)
-     print(">>>> resize_image_core: Function FINISHED.")
+     
      return image_bytes # 假设返回，你需要填充逻辑
-print(">>>> image_operations.py: resize_image_core DEFINED.")
-
-print("-------------------------------------------------------")
-print(">>>> image_operations.py: SCRIPT EXECUTION FINISHED <<<<") # 新增
